@@ -143,7 +143,7 @@ def write_results(prediction,confidence,num_classes,nms_conf = 0.4):
     box_corner[:,:,0] = (prediction[:,:,0] - prediction[:,:,2]/2)
     box_corner[:,:,1] = (prediction[:,:,1] - prediction[:,:,3]/2)
     box_corner[:,:,2] = (prediction[:,:,0] + prediction[:,:,2]/2)
-    box_corner[:,:,3] = (prediction[:,:,0] + prediction[:,:,3]/2)
+    box_corner[:,:,3] = (prediction[:,:,1] + prediction[:,:,3]/2)
     prediction[:,:,:4] = box_corner[:,:,:4]
 
     batch_size = prediction.size(0)
@@ -172,7 +172,7 @@ def write_results(prediction,confidence,num_classes,nms_conf = 0.4):
         except:
             continue
 
-        # print("imagepred_ size2 ",image_pred_.size())
+        # print("imagepred_ size2 ",image_pred_)
         if image_pred_.shape[0] == 0:
             continue
 
@@ -226,6 +226,35 @@ def write_results(prediction,confidence,num_classes,nms_conf = 0.4):
         return output
     except:
         return 0
+
+def load_classes(namefile):
+    fp = open(namefile,"r")
+    names = fp.read().split("\n")[:-1]
+    return names
+
+# 按比例缩放图片大小，并用128填充满图片
+def letterbox_image(img,inp_dim):
+
+    img_w,img_h = img.shape[1],img.shape[0]
+    w,h = inp_dim
+    new_w = int(img_w*min(w/img_w,h/img_h))
+    new_h = int(img_h*min(w/img_w,h/img_h))
+
+    resized_image = cv2.resize(img,(new_w,new_h),interpolation = cv2.INTER_CUBIC)
+
+    canvas = np.full((inp_dim[1],inp_dim[0],3),128)
+
+    canvas[(h-new_h)//2:(h-new_h)//2 + new_h,(w-new_w)//2:(w-new_w)//2+new_w,:] = resized_image
+
+    return canvas
+
+def prep_image(img,inp_dim):
+
+    img = letterbox_image(img,(inp_dim,inp_dim))
+    img = img[:,:,::-1].transpose((2,0,1)).copy()
+    img = torch.from_numpy(img).float().div(255.0).unsqueeze(0)
+
+    return img
 
 
 
